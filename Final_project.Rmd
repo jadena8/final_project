@@ -11,6 +11,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+
+dir_name = "C:/Users/USER/Documents/Prog_R/Data_Carpentry/Final_project"
 ```
 # Introduction
 
@@ -24,13 +27,42 @@ BLASTing protein sequences is a fairly standard practive when trying to determin
 
 _Determining Overlapping Species_
 
-Once I've obtained the PSIBLASTed sequences I will determine the number of overlapping sequences of BamA with a client protein (one that BamA is responsible for folding). To do this, I will exploit the format of FASTA files and use regular expression to grab unique species identifiers. Once I have grabbed those species from BamA, I will compare that list to each of the species that resulted from the PSIBLAST alignments for each client protein. This process can be found in the script get_overlapping_sp.py. In order for this script to be sucessful, I must use the reformat_MSA.py script to reformat the alignments generated from the PSIBLASTed results. This is done to make the parsing quicker. 
+Once I've obtained the PSIBLASTed sequences I will determine the number of overlapping sequences of BamA with a client protein (one that BamA is responsible for folding). To do this, I will exploit the format of FASTA files and use regular expression to grab unique species identifiers. Once I have grabbed those species from BamA, I will compare that list to each of the species that resulted from the PSIBLAST alignments for each client protein. This process can be found in the python chunk get_overlapping_sp of this RMD. In order for this script to be sucessful, I must use the reformat_MSA python chunk to reformat the alignments generated from the PSIBLASTed results. This is done to make the parsing quicker. 
 
 _Testing Formats_
 
 In order to ensure that the data that I've grabbed from the NCBI webserver from PSIBLAST is in the proper formats, I will be loading the Rpackage that I wrote for the last project in order to use the format and protein unit tests on my sequences. I will not need to use the same_size unit test, as this analysis does not care about the size of the proteins in the multiple sequence alignment. 
 
-```{r}
+_Modularity_
 
+It is critically important that a script that works on one file works on all 130 OMBBs fasta files that I have in this directory. In order to accomplish that, all scripts written in this project will be modular.
+```{python reformat_MSA, echo = FALSE}
+import re
+import os
+
+#
+def reformat_dir(filename):
+    with open(filename, "r") as f, open(filename +"_reformated.txt", "w+") as w:
+        seq = ""
+        begin_line = ""
+        count = 0
+        seq_counts = []
+        for line in f:	
+            if ">" in line:
+               begin_line = line
+               w.write(begin_line)
+               w.write(seq + "\n")
+               if(len(seq) != 0):
+                   seq_counts.append(len(seq))
+                   seq = ""			
+            else:
+               seq += line.strip()
+    return()
+
+
+
+for f in os.listdir(dir_name):
+  if f.endswith(".fasta"):
+    reformat_dir(f)
 ```
 
