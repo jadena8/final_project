@@ -12,18 +12,18 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(reticulate)
-
-dir_name = "C:/Users/USER/Documents/Prog_R/Data_Carpentry/Final_project"
 ```
 # Introduction
 
-Gram negative bacteria have a unique arrangement of membranes that help them persist in their enviornment: an outer and inner membrane. On these membranes exist a variety of proteins and structures that have a range of functions that the bacteria utilize[@Remmert2010]. Outer membrane proteins are used to interact with their extracellular enviornment that have a diverse array of functions like import and export of substances, cell adhesion, proteolysis, membrane protein insertion, and more. Even though proteins on the outer membrane have a variety of functions, surprisingly the secondary structure of these proteins (i.e. the structure of what the proteins look like) are very similar[@Franklin, @article]. While these secondary structures are highly similar, their sequence composition (or similarity) is highly variable which makes studying their evolution very difficult. An evolutionary analysis based on HMM profiles was carried out and distinguished roughly 8 unique groups of outer membrane beta barrels (OMBBs) [@Franklin]. ![Figure 1: his figure is taken from "The Complex Evolution of Outer Membrane Proteins". This figure illustrated the evolutionary relationships and connectedness of the OMBBs. A) The 8 groups broken up into Prototypical Barrels, Lysins, Efflux Pumps, Adhesins, Assembly proteins, Fim/Usher proteins, and LptD proteins. B) A structural representation of the conserved structure of the proteins from each group. ](groups_ombbs.png) The folding patterns of the OMBBs is controlled by the assembly group of proteins which consist of a small group of proteins as seen from Figure 1. The most notable assembly complex in gram negative bacteria is the Beta barrel assembly complex or BamA. It is responsible for folding the majority of OMBBs into the outer membrane however its evolutionary relationship with the other OMBBs its responsible for is not well understood. Given it's important role in the folding process of OMBBs it is surprising that BamA or the assembly proteins have little to no connectedness through HMM profiles which can be used as a measure of evolutionary relationships. In this study, I will perform a sequence based analysis of BamA and the current 130 structurally characterized OMBBs. My hypothesis is that BamA sequences in different species will be highly connected or overlap with critically important beta barrels from that same species of BamA, which might give insight onto the folding preferences of the beta barrel assembly complex. 
+Gram negative bacteria have a unique arrangement of membranes that help them persist in their enviornment: an outer and inner membrane. On these membranes exist a variety of proteins and structures that have a range of functions that the bacteria utilize[@Remmert2010]. Outer membrane proteins are used to interact with their extracellular enviornment that have a diverse array of functions like import and export of substances, cell adhesion, proteolysis, membrane protein insertion, and more. Even though proteins on the outer membrane have a variety of functions, surprisingly the secondary structure of these proteins (i.e. the structure of what the proteins look like) are very similar[@Franklin, @article]. While these secondary structures are highly similar, their sequence composition (or similarity) is highly variable which makes studying their evolution very difficult. An evolutionary analysis based on HMM profiles was carried out and distinguished roughly 8 unique groups of outer membrane beta barrels (OMBBs) [@Franklin]. ![Figure 1: his figure is taken from "The Complex Evolution of Outer Membrane Proteins". This figure illustrated the evolutionary relationships and connectedness of the OMBBs. A) The 8 groups broken up into Prototypical Barrels, Lysins, Efflux Pumps, Adhesins, Assembly proteins, Fim/Usher proteins, and LptD proteins. B) A structural representation of the conserved structure of the proteins from each group. ](groups_ombbs.png) The folding patterns of the OMBBs is controlled by the assembly group of proteins which consist of a small group of proteins as seen from Figure 1. The most notable assembly complex in gram negative bacteria is the beta barrel assembly complex or BamA. It is responsible for folding the majority of OMBBs into the outer membrane however its evolutionary relationship with the other OMBBs its responsible for is not well understood. Given it's important role in the folding process of OMBBs it is surprising that BamA or the assembly proteins have little to no connectedness through HMM profiles which can be used as a measure of evolutionary relationships. In this study, I will perform a sequence based analysis of BamA and the current 130 structurally characterized OMBBs. My hypothesis is that BamA sequences in different species will be highly connected or overlap with critically important beta barrels from that same species of BamA, which might give insight onto the folding preferences of the beta barrel assembly complex.
 
 # Methods
 
 _Basic Local Alignment Search Tool or BLAST_
 
 BLASTing protein sequences is a fairly standard practive when trying to determine relationships between different proteins. The BLASTing algorithm that I used is PSIBlast which is based off the NCBI blastp algorithm. Normal BLAST (or blastp) is a sequence similarity search method which identifies like protein sequences based off given thresholds like homology or sequence similiarty. PSIBLAST is an iterative tool that builds protein sequence profiles from blastp results in order to refine search space and produce higher scoring alignments. I PSIblasted BamA along with all 130 structurally characterized OMBBs in order to generate multiple sequence alignments. In order to make sure I was pulling similar sequences, I used a false positive rate or evalue of 10^-50. 
+
+The parent sequence, or original sequence, used to PSIBLAST similar proteins were pulled from the IDB. A PDB identifier is a 4 digit combination of numbers and letters with an optional chain identifier (_letter). I grabbed all 130 PDB files from the RSCB PDB webserver. 
 
 _Determining Overlapping Species_
 
@@ -35,34 +35,106 @@ In order to ensure that the data that I've grabbed from the NCBI webserver from 
 
 _Modularity_
 
-It is critically important that a script that works on one file works on all 130 OMBBs fasta files that I have in this directory. In order to accomplish that, all scripts written in this project will be modular.
+It is critically important that a script that works on one file works on all 130 OMBBs fasta files that I have in this directory. In order to accomplish that, all scripts written in this project will be modular. Sciprts were originally written in python and imported to RMD using the Knitr capabilities.
 ```{python reformat_MSA, echo = FALSE}
 import re
 import os
 
-#
+#Function that reformats the fasta files given from the PSIBLAST result into identifier and sequence on serperate lines
 def reformat_dir(filename):
+    #Open the file passed through and write a reformated version of it with the same PDB identifier
     with open(filename, "r") as f, open(filename +"_reformated.txt", "w+") as w:
         seq = ""
         begin_line = ""
-        count = 0
-        seq_counts = []
+        
+        #For each line in the open file
         for line in f:	
+            #Identify if we're on an ID line
             if ">" in line:
+               #Save that ID line
                begin_line = line
-               w.write(begin_line)
-               w.write(seq + "\n")
+               
+               #If we also have a sequence, then print to the reformated file
                if(len(seq) != 0):
-                   seq_counts.append(len(seq))
+                   w.write(begin_line)
+                   w.write(seq + "\n")
                    seq = ""			
+            #Grab the sequence and strip any excess characters like \ns or whitespace
             else:
                seq += line.strip()
     return()
 
+#Grab the current working directory that is open if it has the 1T16.fasta file in it
+dir_name = str(os.path.dirname(os.path.realpath("1T16.fasta")))
 
 
+#Loop through that directory and reformat only the *.fasta files
 for f in os.listdir(dir_name):
   if f.endswith(".fasta"):
     reformat_dir(f)
 ```
 
+```{python get_overlapping_sp, echo = FALSE}
+import re
+import os
+
+bama = "reformat_total_bama_blastp_seqs.txt"
+
+def loop_dir(filename):
+    species=[]
+    i=0
+    with open(bama) as inFile:
+      for line in inFile:
+        line = line.rstrip()
+    
+        if line.startswith('>'):
+          regex = re.compile('(\[(.+?)\].*)')
+          try:
+            matches = regex.search(line).group(1)[1:-1]
+          except AttributeError:
+             matches = None		  
+        if matches is not None:
+          species.append(matches)
+ 
+    unique_sp = list(set(species))
+
+    seq = ""
+    count = 0
+    resi = []
+    with open(filename) as inFile:
+        for line in inFile:
+            if line.startswith('>'):
+                name_line = line
+                regex = re.compile('(\[(.+?)\].*)')
+                
+                try:
+                    to_match = regex.search(line).group(1)[1:-1]
+                except AttributeError:
+                    to_match = None 
+                
+                if to_match is not None:
+                    for i in unique_sp:
+                        if i == to_match:
+                            count += 1
+                            seq = next(inFile)
+                            print(name_line, end = "")
+                            resi.append(len(seq))
+                            print(seq, end = "")
+                            unique_sp.remove(i)
+                            seq = ""
+
+    if len(resi) == 0:
+        return(count, 0)
+    elif len(resi) == 1:
+        return(count, resi[0])
+    else:
+        return(count, resi[1])
+
+dir_name = str(os.path.dirname(os.path.realpath("1T16.fasta")))
+
+counts = []
+for f in os.listdir(dir_name):
+  if f.endswith(".fasta_reformated.txt"):
+    counts = str(loop_dir(f))
+    print(f + "\t" + counts)
+```
