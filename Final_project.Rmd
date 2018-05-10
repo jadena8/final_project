@@ -3,10 +3,10 @@ title: "Untitled"
 author: "Jaden Anderson"
 date: "May 1st, 2018"
 output:
-  pdf_document:
-    fig_caption: yes
   html_document:
     df_print: paged
+  pdf_document:
+    fig_caption: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -36,6 +36,7 @@ In order to ensure that the data that I've grabbed from the NCBI webserver from 
 _Modularity_
 
 It is critically important that a script that works on one file works on all 130 OMBBs fasta files that I have in this directory. In order to accomplish that, all scripts written in this project will be modular. Sciprts were originally written in python and imported to RMD using the Knitr capabilities.
+
 ```{python reformat_MSA, echo = FALSE}
 import re
 import os
@@ -75,66 +76,69 @@ for f in os.listdir(dir_name):
 ```
 
 ```{python get_overlapping_sp, echo = FALSE}
+
 import re
 import os
 
 bama = "reformat_total_bama_blastp_seqs.txt"
 
 def loop_dir(filename):
-    species=[]
-    i=0
-    with open(bama) as inFile:
-      for line in inFile:
-        line = line.rstrip()
-    
-        if line.startswith('>'):
-          regex = re.compile('(\[(.+?)\].*)')
-          try:
-            matches = regex.search(line).group(1)[1:-1]
-          except AttributeError:
-             matches = None		  
+  species = []
+  i = 0
+  with open(bama) as inFile:
+    for line in inFile:
+      line = line.strip()
+      if line.startswith('>'):
+        regex = re.compile('(\[(.+?)\].*)')
+        
+        try: 
+          matches = regex.search(line).group(1)[1:-1]
+        except AttributeError:
+          matches = None
         if matches is not None:
           species.append(matches)
- 
-    unique_sp = list(set(species))
+          
+  unique_sp = list(set(species))
+  seq = ""
+  count_overlap = 0
+  
+  with open(filename) as inFile:
+    for line in inFile:
+      if line.startswith('>'):
+        name_line = line
+        regex = re.compile('(\[(.+?)\].*)')
+        
+        try: 
+          to_match = regex.search(line).group(1)[1:-1]
+        except AttributeError:
+          to_match = None
+        if to_match is not None:
+          for i in unique_sp:
+            if i == to_match:
+              count_overlap += 1
+              unique_sp.remove(i)
 
-    seq = ""
-    count = 0
-    resi = []
-    with open(filename) as inFile:
-        for line in inFile:
-            if line.startswith('>'):
-                name_line = line
-                regex = re.compile('(\[(.+?)\].*)')
-                
-                try:
-                    to_match = regex.search(line).group(1)[1:-1]
-                except AttributeError:
-                    to_match = None 
-                
-                if to_match is not None:
-                    for i in unique_sp:
-                        if i == to_match:
-                            count += 1
-                            seq = next(inFile)
-                            print(name_line, end = "")
-                            resi.append(len(seq))
-                            print(seq, end = "")
-                            unique_sp.remove(i)
-                            seq = ""
-
-    if len(resi) == 0:
-        return(count, 0)
-    elif len(resi) == 1:
-        return(count, resi[0])
-    else:
-        return(count, resi[1])
+  return count_overlap
 
 dir_name = str(os.path.dirname(os.path.realpath("1T16.fasta")))
 
-counts = []
-for f in os.listdir(dir_name):
-  if f.endswith(".fasta_reformated.txt"):
-    counts = str(loop_dir(f))
-    print(f + "\t" + counts)
+counts = 0
+with open("overlapping_sp_of_bama.txt", "w+") as outFile:
+  for f in os.listdir(dir_name):
+    if f.endswith(".fasta_reformated.txt"):
+      counts = str(loop_dir(f))
+      outFile.write(f + "\t" + counts + "\n")
+
+```
+
+
+```{r plot_seq_counts, echo = FALSE}
+
+seq_counts <- read.table("overlapping_sp_of_bama.txt")
+seq_counts <- seq_counts[order(seq_counts$V2, decreasing = TRUE),]
+seq_counts <- seq_counts[seq_counts$V2 > 500,]
+named <- as.vector(seq_counts[[1]])
+data <- as.vector(seq_counts[[2]])
+names(data) <- c('4K3B', '4K3C','5IVA','4Q35','5IXM','1EK9','5FOK','5FP1','4N75','4C00','5AZP','4MT0','3D5K','2GSK','5AZS','4K7R','3QLB','2HDI','4CU4','1YC9','4RDR','5FR8','3EFM','5FP2','1FEP','2IAH','1XKW','1T16','5WQ8','1KMO','5WQ7','2F1V')
+barplot(data, las = 2, cex.names = 0.8)
 ```
