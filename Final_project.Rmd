@@ -1,12 +1,11 @@
 ---
-title: "Untitled"
+title: "Final Project Report"
 author: "Jaden Anderson"
 date: "May 1st, 2018"
 output:
   pdf_document:
     fig_caption: yes
-  html_document:
-    df_print: paged
+bibliography: bib.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -15,13 +14,17 @@ library(reticulate)
 ```
 # Introduction
 
-Gram negative bacteria have a unique arrangement of membranes that help them persist in their enviornment: an outer and inner membrane. On these membranes exist a variety of proteins and structures that have a range of functions that the bacteria utilize[@Remmert2010]. Outer membrane proteins are used to interact with their extracellular enviornment that have a diverse array of functions like import and export of substances, cell adhesion, proteolysis, membrane protein insertion, and more. Even though proteins on the outer membrane have a variety of functions, surprisingly the secondary structure of these proteins (i.e. the structure of what the proteins look like) are very similar[@Franklin, @article]. While these secondary structures are highly similar, their sequence composition (or similarity) is highly variable which makes studying their evolution very difficult. An evolutionary analysis based on HMM profiles was carried out and distinguished roughly 8 unique groups of outer membrane beta barrels (OMBBs) [@Franklin]. ![Figure 1: his figure is taken from "The Complex Evolution of Outer Membrane Proteins". This figure illustrated the evolutionary relationships and connectedness of the OMBBs. A) The 8 groups broken up into Prototypical Barrels, Lysins, Efflux Pumps, Adhesins, Assembly proteins, Fim/Usher proteins, and LptD proteins. B) A structural representation of the conserved structure of the proteins from each group. ](groups_ombbs.png) The folding patterns of the OMBBs is controlled by the assembly group of proteins which consist of a small group of proteins as seen from Figure 1. The most notable assembly complex in gram negative bacteria is the beta barrel assembly complex or BamA. It is responsible for folding the majority of OMBBs into the outer membrane however its evolutionary relationship with the other OMBBs its responsible for is not well understood. Given it's important role in the folding process of OMBBs it is surprising that BamA or the assembly proteins have little to no connectedness through HMM profiles which can be used as a measure of evolutionary relationships. In this study, I will perform a sequence based analysis of BamA and the current 130 structurally characterized OMBBs. My hypothesis is that BamA sequences in different species will be highly connected or overlap with critically important beta barrels from that same species of BamA, which might give insight onto the folding preferences of the beta barrel assembly complex.
+Gram negative bacteria have a unique arrangement of membranes that help them persist in their enviornment: an outer and inner membrane. On these membranes exist a variety of proteins and structures that have a range of functions that the bacteria utilize[@Remmert2010]. Outer membrane proteins are used to interact with their extracellular enviornment that have a diverse array of functions like import and export of substances, cell adhesion, proteolysis, membrane protein insertion, and more. Even though proteins on the outer membrane have a variety of functions, surprisingly the secondary structure of these proteins (i.e. the structure of what the proteins look like) are very similar[@Franklin, @article]. While these secondary structures are highly similar, their sequence composition (or similarity) is highly variable which makes studying their evolution very difficult. An evolutionary analysis based on HMM profiles was carried out and distinguished roughly 8 unique groups of outer membrane beta barrels (OMBBs) [@Franklin]. 
+
+![This figure is taken from "The Complex Evolution of Outer Membrane Proteins" which is in review. This figure illustrated the evolutionary relationships and connectedness of the OMBBs. A) The 8 groups broken up into Prototypical Barrels, Lysins, Efflux Pumps, Adhesins, Assembly proteins, Fim/Usher proteins, and LptD proteins. B) A structural representation of the conserved structure of the proteins from each group. ](groups_ombbs.png) 
+
+The folding patterns of the OMBBs is controlled by the assembly group of proteins which consist of a small group of proteins as seen from Figure 1. The most notable assembly complex in gram negative bacteria is the beta barrel assembly complex or BamA [@Plummer2015]. It is responsible for folding the majority of OMBBs into the outer membrane however its evolutionary relationship with the other OMBBs its responsible for is not well understood [@Plummer2015]. Given it's important role in the folding process of OMBBs it is surprising that BamA or the assembly proteins have little to no connectedness through HMM profiles which can be used as a measure of evolutionary relationships. In this study, I will perform a sequence based analysis of BamA and the current 130 structurally characterized OMBBs. My hypothesis is that BamA sequences in different species will be highly connected or overlap with critically important beta barrels from that same species of BamA, which might give insight onto the folding preferences of the beta barrel assembly complex.
 
 # Methods
 
 _Basic Local Alignment Search Tool or BLAST_
 
-BLASTing protein sequences is a fairly standard practive when trying to determine relationships between different proteins. The BLASTing algorithm that I used is PSIBlast which is based off the NCBI blastp algorithm. Normal BLAST (or blastp) is a sequence similarity search method which identifies like protein sequences based off given thresholds like homology or sequence similiarty. PSIBLAST is an iterative tool that builds protein sequence profiles from blastp results in order to refine search space and produce higher scoring alignments. I PSIblasted BamA along with all 130 structurally characterized OMBBs in order to generate multiple sequence alignments. In order to make sure I was pulling similar sequences, I used a false positive rate or evalue of 10^-50. 
+BLASTing protein sequences is a fairly standard practive when trying to determine relationships between different proteins. The BLASTing algorithm that I used is PSIBlast which is based off the NCBI blastp algorithm. Normal BLAST (or blastp) is a sequence similarity search method which identifies like protein sequences based off given thresholds like homology or sequence similiarty [@BhagwatM2007]. PSIBLAST is an iterative tool that builds protein sequence profiles from blastp results in order to refine search space and produce higher scoring alignments [@BhagwatM2007]. I PSIblasted BamA along with all 130 structurally characterized OMBBs in order to generate multiple sequence alignments. In order to make sure I was pulling similar sequences, I used a false positive rate or evalue of 10^-50. 
 
 The parent sequence, or original sequence, used to PSIBLAST similar proteins were pulled from the IDB. A PDB identifier is a 4 digit combination of numbers and letters with an optional chain identifier (_letter). I grabbed all 130 PDB files from the RSCB PDB webserver. 
 
@@ -36,6 +39,7 @@ In order to ensure that the data that I've grabbed from the NCBI webserver from 
 _Modularity_
 
 It is critically important that a script that works on one file works on all 130 OMBBs fasta files that I have in this directory. In order to accomplish that, all scripts written in this project will be modular. Sciprts were originally written in python and imported to RMD using the Knitr capabilities.
+
 ```{python reformat_MSA, echo = FALSE}
 import re
 import os
@@ -75,66 +79,99 @@ for f in os.listdir(dir_name):
 ```
 
 ```{python get_overlapping_sp, echo = FALSE}
+
 import re
 import os
 
 bama = "reformat_total_bama_blastp_seqs.txt"
 
 def loop_dir(filename):
-    species=[]
-    i=0
-    with open(bama) as inFile:
-      for line in inFile:
-        line = line.rstrip()
-    
-        if line.startswith('>'):
-          regex = re.compile('(\[(.+?)\].*)')
-          try:
-            matches = regex.search(line).group(1)[1:-1]
-          except AttributeError:
-             matches = None		  
+  species = []
+  i = 0
+  #Get species from BamA
+  with open(bama) as inFile:
+    for line in inFile:
+      line = line.strip()
+      if line.startswith('>'):
+        #Use regular expression to grab species identifier in fasta format
+        regex = re.compile('(\[(.+?)\].*)')
+        
+        #If I get a match, then store in matches, if I get an error where no ID was found, store None and don't append to species list
+        try: 
+          matches = regex.search(line).group(1)[1:-1]
+        except AttributeError:
+          matches = None
         if matches is not None:
           species.append(matches)
- 
-    unique_sp = list(set(species))
+  #Make a list of the unique species in BamA        
+  unique_sp = list(set(species))
+  seq = ""
+  count_overlap = 0
+  #Open a file to look at
+  with open(filename) as inFile:
+    for line in inFile:
+      if line.startswith('>'):
+        name_line = line
+        #Grab the species identifies for this file
+        regex = re.compile('(\[(.+?)\].*)')
+        
+        #Same check as before with BamA
+        try: 
+          to_match = regex.search(line).group(1)[1:-1]
+        except AttributeError:
+          to_match = None
+          
+        #If I have matched the regex 
+        if to_match is not None:
+          #Loop through unique_sp, to find that species in the client protein
+          for i in unique_sp:
+            #If I match, increment the overlapping sp count, and remove the entry from unique_sp so we don't over count
+            if i == to_match:
+              count_overlap += 1
+              unique_sp.remove(i)
 
-    seq = ""
-    count = 0
-    resi = []
-    with open(filename) as inFile:
-        for line in inFile:
-            if line.startswith('>'):
-                name_line = line
-                regex = re.compile('(\[(.+?)\].*)')
-                
-                try:
-                    to_match = regex.search(line).group(1)[1:-1]
-                except AttributeError:
-                    to_match = None 
-                
-                if to_match is not None:
-                    for i in unique_sp:
-                        if i == to_match:
-                            count += 1
-                            seq = next(inFile)
-                            print(name_line, end = "")
-                            resi.append(len(seq))
-                            print(seq, end = "")
-                            unique_sp.remove(i)
-                            seq = ""
+  return count_overlap
 
-    if len(resi) == 0:
-        return(count, 0)
-    elif len(resi) == 1:
-        return(count, resi[0])
-    else:
-        return(count, resi[1])
-
+#Grabs current directory path if the FASTA file 1T16 is in it
 dir_name = str(os.path.dirname(os.path.realpath("1T16.fasta")))
 
-counts = []
-for f in os.listdir(dir_name):
-  if f.endswith(".fasta_reformated.txt"):
-    counts = str(loop_dir(f))
-    print(f + "\t" + counts)
+counts = 0
+#Writes the results of the function to a file
+with open("overlapping_sp_of_bama.txt", "w+") as outFile:
+  for f in os.listdir(dir_name):
+    if f.endswith(".fasta_reformated.txt"):
+      counts = str(loop_dir(f))
+      outFile.write(f + "\t" + counts + "\n")
+
 ```
+
+
+```{r plot_seq_counts, echo = FALSE}
+#Read in the table from the results of get_overlapping_sp
+seq_counts <- read.table("overlapping_sp_of_bama.txt")
+#Sort based on most overlapping species
+seq_counts <- seq_counts[order(seq_counts$V2, decreasing = TRUE),]
+#Filter down to greater than 500 overlapping sequences
+seq_counts <- seq_counts[seq_counts$V2 > 500,]
+named <- as.vector(seq_counts[[1]])
+data <- as.vector(seq_counts[[2]])
+
+#barplot(data, las = 2, cex.names = 0.8, xlab = "PDB ID", ylab = "# of overlapping species with BamA", main = "Overlapping Species of Client Protein with BamA")
+
+```
+
+# Results and Discussion
+
+The results of the analysis are show in Figure 2. From here we can start to see some interesting trends of possible interactions that BamA might have with client proteins. Only overlapping sequences that were greater than 500 were considered to be important in this analysis. From this, we can see a variety of client proteins important for assembly (other Bam proteins, TamA), maitenence of the lipid compositions (LptDs), major transporters (BtuB), efflux pumps (1EK9) and a variety of other critically important functions. 
+
+![Figure 2: Barplot of overlapping species of client protein with BamA. The client proteins with an overlap of at least 500 sequences was plotting. From here, we can see the majority of the proteins that have the most sequences are critically important proteins for assembly of OMBBs, maintenance of the lipid composition of the membranes, major transporters, efflux pumps and more.](overlap_sp_bama.png) 
+
+Interestingly enough, all of these proteins are the larger proteins (> 20 strands) besides one exception FadL a 14 stranded beta barrel. If we look at Figure 3 which is an HMM profile nextwork with strand size, we can see some interesting trends. FadL or 1T16 seems to be interconnected between the 14 stranded beta barrels and 22 stranded beta barrels. Given that 1T16 popped out as a highly overlapping client protein with BamA might indicate some stronger evolutionary relationship with the 22 stranded beta barrels. 
+
+![Figure 3: HMM profile of OMBBs with an evalue cutoff of 10^-2. The evalue must be kept that high due to the low sequence similarities that OMBBs naturally have. Here we can see high connectedness of FadL (1T16) a 14 stranded beta barrel with the 22 stranded beta barrels and the 12 stranded beta barrels. It's high overlapping as a client protein with BamA might indicate a stronger evolutionary relationship depicted in this figure. This figure is also from "The Complex Evolution of Outer Membrane Proteins". ](Fig2E_10-2.png)
+
+# Conclusion
+
+The beta barrel assembly complex (BamA) is a crucially important protein complex that is responsible for folding OMBBs into the outer membrane [@Plummer2015]. It has been hypothesized that BamA has evolved to interact with OMBBs that are critically important for functionality [@Plummer2015]. Interestingly in my overlapping species analysis between a client protein and BamA, I find that BamA shares a large number of overlapping species with the larger OMBBs that have critically important functions in the cell, while the smaller porins fell out of my study. The smallest of the proteins that had a large overlap with BamA is FadL, a 14 stranded beta barrel. This protein has been hypothesized as a connection between the transition of 14 stranded beta barrels to 22 stranded beta barrels. My study may help solidify that argument since there is a high overlap of species between BamA and FadL (1T16). 
+
+# References
