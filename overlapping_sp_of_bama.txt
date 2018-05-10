@@ -127,7 +127,3 @@
 5TCQ.fasta_reformated.txt	178
 5WQ7.fasta_reformated.txt	486
 5WQ8.fasta_reformated.txt	613
-t	40
-5TCQ.fasta_reformated.txt	1231
-5WQ7.fasta_reformated.txt	2505
-5WQ8.fasta_reformated.txt	2633
